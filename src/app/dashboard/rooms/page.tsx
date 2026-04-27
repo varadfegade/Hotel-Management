@@ -2,18 +2,21 @@
 
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Plus, CheckCircle, XCircle, Trash2 } from 'lucide-react';
+import { Plus, CheckCircle, XCircle, Trash2, X } from 'lucide-react';
 
 export default function RoomsPage() {
   const [rooms, setRooms] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [newRoom, setNewRoom] = useState({ roomType: 'Standard', price: 100, floor: 1 });
 
   const fetchRooms = async () => {
     try {
       const res = await axios.get('/api/rooms');
       setRooms(res.data);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      alert(err.response?.data?.error || err.message);
     } finally {
       setLoading(false);
     }
@@ -23,17 +26,16 @@ export default function RoomsPage() {
     fetchRooms();
   }, []);
 
-  const handleInsert = async () => {
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
     try {
-      await axios.post('/api/rooms', {
-        roomType: ['Deluxe', 'Suite', 'Standard'][Math.floor(Math.random() * 3)],
-        price: Math.floor(Math.random() * 300) + 100,
-        status: 'Available',
-        floor: Math.floor(Math.random() * 5) + 1
-      });
+      await axios.post('/api/rooms', { ...newRoom, status: 'Available' });
       fetchRooms();
-    } catch (err) {
+      setIsModalOpen(false);
+      setNewRoom({ roomType: 'Standard', price: 100, floor: 1 });
+    } catch (err: any) {
       console.error(err);
+      alert(err.response?.data?.error || err.message);
     }
   };
 
@@ -41,8 +43,9 @@ export default function RoomsPage() {
     try {
       await axios.put(`/api/rooms/${id}/status`, { status: newStatus });
       fetchRooms();
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      alert(err.response?.data?.error || err.message);
     }
   };
 
@@ -51,8 +54,9 @@ export default function RoomsPage() {
     try {
       await axios.delete(`/api/rooms/${id}`);
       fetchRooms();
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      alert(err.response?.data?.error || err.message);
     }
   };
 
@@ -61,11 +65,11 @@ export default function RoomsPage() {
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-bold">Rooms</h1>
         <button 
-          onClick={handleInsert}
+          onClick={() => setIsModalOpen(true)}
           className="flex items-center gap-2 px-4 py-2 bg-gold-500 text-slate-950 font-semibold rounded-lg hover:bg-gold-400 transition-colors"
         >
           <Plus className="w-4 h-4" />
-          Add Room (Q2)
+          Add Room
         </button>
       </div>
 
@@ -105,7 +109,7 @@ export default function RoomsPage() {
                       <button 
                         onClick={() => handleUpdateStatus(room._id, 'Occupied')}
                         className="flex items-center gap-1 px-3 py-1.5 bg-slate-800 text-slate-200 text-xs font-medium rounded hover:bg-slate-700 transition-colors"
-                        title="Update Status to Occupied (Q7)"
+                        title="Update Status to Occupied"
                       >
                         <CheckCircle className="w-3 h-3" />
                         Mark Occupied
@@ -134,6 +138,40 @@ export default function RoomsPage() {
           </tbody>
         </table>
       </div>
+
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 w-full max-w-md">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-bold">Add New Room</h2>
+              <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <form onSubmit={handleSave} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-400 mb-1">Room Type</label>
+                <select value={newRoom.roomType} onChange={e => setNewRoom({...newRoom, roomType: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2 focus:outline-none focus:border-gold-500">
+                  <option value="Standard">Standard</option>
+                  <option value="Deluxe">Deluxe</option>
+                  <option value="Suite">Suite</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-400 mb-1">Price ($)</label>
+                <input required type="number" min="0" value={newRoom.price} onChange={e => setNewRoom({...newRoom, price: Number(e.target.value)})} className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2 focus:outline-none focus:border-gold-500" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-400 mb-1">Floor</label>
+                <input required type="number" min="1" value={newRoom.floor} onChange={e => setNewRoom({...newRoom, floor: Number(e.target.value)})} className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2 focus:outline-none focus:border-gold-500" />
+              </div>
+              <button type="submit" className="w-full py-2 bg-gold-500 text-slate-950 font-bold rounded-lg hover:bg-gold-400 transition-colors mt-4">
+                Save Room
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

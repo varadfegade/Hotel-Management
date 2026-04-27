@@ -2,18 +2,21 @@
 
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Trash2, Edit2, Plus } from 'lucide-react';
+import { Trash2, Edit2, Plus, X } from 'lucide-react';
 
 export default function GuestsPage() {
   const [guests, setGuests] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [newGuest, setNewGuest] = useState({ name: '', email: '', phone: '', address: '' });
 
   const fetchGuests = async () => {
     try {
       const res = await axios.get('/api/guests');
       setGuests(res.data);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      alert(err.response?.data?.error || err.message);
     } finally {
       setLoading(false);
     }
@@ -23,17 +26,16 @@ export default function GuestsPage() {
     fetchGuests();
   }, []);
 
-  const handleInsert = async () => {
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
     try {
-      await axios.post('/api/guests', {
-        name: `Guest ${Math.floor(Math.random() * 1000)}`,
-        email: `guest${Math.floor(Math.random() * 1000)}@example.com`,
-        phone: '1234567890',
-        address: '123 Luxury Ave'
-      });
+      await axios.post('/api/guests', newGuest);
       fetchGuests();
-    } catch (err) {
+      setIsModalOpen(false);
+      setNewGuest({ name: '', email: '', phone: '', address: '' });
+    } catch (err: any) {
       console.error(err);
+      alert(err.response?.data?.error || err.message);
     }
   };
 
@@ -43,8 +45,9 @@ export default function GuestsPage() {
     try {
       await axios.put(`/api/guests/${id}/address`, { address: newAddress });
       fetchGuests();
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      alert(err.response?.data?.error || err.message);
     }
   };
 
@@ -53,8 +56,9 @@ export default function GuestsPage() {
     try {
       await axios.delete(`/api/guests/${id}`);
       fetchGuests();
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      alert(err.response?.data?.error || err.message);
     }
   };
 
@@ -63,11 +67,11 @@ export default function GuestsPage() {
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-bold">Guests</h1>
         <button 
-          onClick={handleInsert}
+          onClick={() => setIsModalOpen(true)}
           className="flex items-center gap-2 px-4 py-2 bg-gold-500 text-slate-950 font-semibold rounded-lg hover:bg-gold-400 transition-colors"
         >
           <Plus className="w-4 h-4" />
-          Add Guest (Q1)
+          Add Guest
         </button>
       </div>
 
@@ -98,14 +102,14 @@ export default function GuestsPage() {
                     <button 
                       onClick={() => handleUpdateAddress(guest._id)}
                       className="text-blue-400 hover:text-blue-300 transition-colors"
-                      title="Update Address (Q8)"
+                      title="Update Address"
                     >
                       <Edit2 className="w-4 h-4" />
                     </button>
                     <button 
                       onClick={() => handleDelete(guest._id)}
                       className="text-rose-400 hover:text-rose-300 transition-colors"
-                      title="Delete Guest (Q10)"
+                      title="Delete Guest"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -116,6 +120,41 @@ export default function GuestsPage() {
           </tbody>
         </table>
       </div>
+
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 w-full max-w-md">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-bold">Add New Guest</h2>
+              <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <form onSubmit={handleSave} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-400 mb-1">Name</label>
+                <input required type="text" value={newGuest.name} onChange={e => setNewGuest({...newGuest, name: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2 focus:outline-none focus:border-gold-500" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-400 mb-1">Email</label>
+                <input required type="email" value={newGuest.email} onChange={e => setNewGuest({...newGuest, email: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2 focus:outline-none focus:border-gold-500" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-400 mb-1">Phone</label>
+                <input required type="text" value={newGuest.phone} onChange={e => setNewGuest({...newGuest, phone: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2 focus:outline-none focus:border-gold-500" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-400 mb-1">Address</label>
+                <input required type="text" value={newGuest.address} onChange={e => setNewGuest({...newGuest, address: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2 focus:outline-none focus:border-gold-500" />
+              </div>
+              <button type="submit" className="w-full py-2 bg-gold-500 text-slate-950 font-bold rounded-lg hover:bg-gold-400 transition-colors mt-4">
+                Save Guest
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+

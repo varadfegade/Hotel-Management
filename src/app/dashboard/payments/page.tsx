@@ -2,18 +2,22 @@
 
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, X } from 'lucide-react';
 
 export default function PaymentsPage() {
   const [payments, setPayments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [bookingsList, setBookingsList] = useState<any[]>([]);
+  const [newPayment, setNewPayment] = useState({ bookingId: '', amount: 100 });
 
   const fetchPayments = async () => {
     try {
       const res = await axios.get('/api/payments');
       setPayments(res.data);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      alert(err.response?.data?.error || err.message);
     } finally {
       setLoading(false);
     }
@@ -23,22 +27,35 @@ export default function PaymentsPage() {
     fetchPayments();
   }, []);
 
-  const handleInsert = async () => {
+  const openModal = async () => {
     try {
       const bRes = await axios.get('/api/bookings');
-      if (bRes.data.length === 0) {
-        alert('Please create at least one Booking first.');
+      setBookingsList(bRes.data);
+      if (bRes.data.length > 0) {
+        setNewPayment({ ...newPayment, bookingId: bRes.data[0]._id });
+      }
+      setIsModalOpen(true);
+    } catch (err: any) {
+      console.error(err);
+      alert(err.response?.data?.error || err.message);
+    }
+  };
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      if (!newPayment.bookingId) {
+        alert('Please select a Booking.');
         return;
       }
-      // Assuming payment is roughly related to the booking
-      await axios.post('/api/payments', {
-        bookingId: bRes.data[0]._id, // 1:1 relationship
-        amount: Math.floor(Math.random() * 500) + 100
-      });
+      await axios.post('/api/payments', newPayment);
       fetchPayments();
+      setIsModalOpen(false);
     } catch (err: any) {
-      if (err.response?.status === 400) {
-        alert("Payment for this booking might already exist (1:1 relationship constraint). Try deleting DB or creating a new booking.");
+      if (err.response?.status === 400 || err.response?.data?.error?.includes('duplicate')) {
+        alert("Payment for this booking might already exist (1:1 relationship constraint).");
+      } else {
+        alert(err.response?.data?.error || err.message);
       }
       console.error(err);
     }
@@ -49,8 +66,9 @@ export default function PaymentsPage() {
     try {
       await axios.delete(`/api/payments/${id}`);
       fetchPayments();
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      alert(err.response?.data?.error || err.message);
     }
   };
 
@@ -59,11 +77,11 @@ export default function PaymentsPage() {
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-bold">Payments</h1>
         <button 
-          onClick={handleInsert}
+          onClick={openModal}
           className="flex items-center gap-2 px-4 py-2 bg-gold-500 text-slate-950 font-semibold rounded-lg hover:bg-gold-400 transition-colors"
         >
           <Plus className="w-4 h-4" />
-          Add Payment (Q6)
+          Add Payment
         </button>
       </div>
 
@@ -79,9 +97,9 @@ export default function PaymentsPage() {
           </thead>
           <tbody className="divide-y divide-slate-800/50">
             {loading ? (
-              <tr><td colSpan={3} className="px-6 py-8 text-center text-slate-500">Loading payments...</td></tr>
+              <tr><td colSpan={4} className="px-6 py-8 text-center text-slate-500">Loading payments...</td></tr>
             ) : payments.length === 0 ? (
-              <tr><td colSpan={3} className="px-6 py-8 text-center text-slate-500">No payments found.</td></tr>
+              <tr><td colSpan={4} className="px-6 py-8 text-center text-slate-500">No payments found.</td></tr>
             ) : (
               payments.map((payment) => (
                 <tr key={payment._id} className="hover:bg-slate-800/30 transition-colors">
@@ -103,6 +121,35 @@ export default function PaymentsPage() {
           </tbody>
         </table>
       </div>
+
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 w-full max-w-md">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-bold">Add New Payment</h2>
+              <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <form onSubmit={handleSave} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-400 mb-1">Booking</label>
+                <select required value={newPayment.bookingId} onChange={e => setNewPayment({...newPayment, bookingId: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2 focus:outline-none focus:border-gold-500">
+                  <option value="" disabled>Select Booking</option>
+                  {bookingsList.map(b => <option key={b._id} value={b._id}>{b.guestId?.name} - {b.roomId?.roomType}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-400 mb-1">Amount ($)</label>
+                <input required type="number" min="0" value={newPayment.amount} onChange={e => setNewPayment({...newPayment, amount: Number(e.target.value)})} className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2 focus:outline-none focus:border-gold-500" />
+              </div>
+              <button type="submit" className="w-full py-2 bg-gold-500 text-slate-950 font-bold rounded-lg hover:bg-gold-400 transition-colors mt-4">
+                Save Payment
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
