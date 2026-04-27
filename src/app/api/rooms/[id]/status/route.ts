@@ -3,8 +3,8 @@ import dbConnect from '@/lib/db';
 import Room from '@/lib/models/Room';
 
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  await dbConnect();
   try {
+    await dbConnect();
     const { id } = await params;
     const { status } = await req.json();
     const room = await Room.findByIdAndUpdate(id, { status }, { new: true });

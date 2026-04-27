@@ -3,8 +3,8 @@ import dbConnect from '@/lib/db';
 import Booking from '@/lib/models/Booking';
 
 export async function GET() {
-  await dbConnect();
   try {
+    await dbConnect();
     const bookings = await Booking.find().populate('guestId').populate('roomId');
     return NextResponse.json(bookings);
   } catch (error: any) {
@@ -13,8 +13,8 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  await dbConnect();
   try {
+    await dbConnect();
     const body = await req.json();
     const booking = new Booking(body);
     await booking.save();

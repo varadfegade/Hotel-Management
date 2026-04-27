@@ -3,8 +3,8 @@ import dbConnect from '@/lib/db';
 import Booking from '@/lib/models/Booking';
 
 export async function GET() {
-  await dbConnect();
   try {
+    await dbConnect();
     // We need to join Booking with Room to group by roomType
     const popularRooms = await Booking.aggregate([
       {

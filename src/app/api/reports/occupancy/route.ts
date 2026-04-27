@@ -3,8 +3,8 @@ import dbConnect from '@/lib/db';
 import Room from '@/lib/models/Room';
 
 export async function GET() {
-  await dbConnect();
   try {
+    await dbConnect();
     const occupancy = await Room.aggregate([
       {
         $group: {

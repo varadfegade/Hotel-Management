@@ -3,8 +3,8 @@ import dbConnect from '@/lib/db';
 import Room from '@/lib/models/Room';
 
 export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  await dbConnect();
   try {
+    await dbConnect();
     const { id } = await params;
     const room = await Room.findByIdAndDelete(id);
     if (!room) return NextResponse.json({ error: 'Room not found' }, { status: 404 });

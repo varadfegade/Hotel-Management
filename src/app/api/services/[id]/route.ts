@@ -3,8 +3,8 @@ import dbConnect from '@/lib/db';
 import Service from '@/lib/models/Service';
 
 export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  await dbConnect();
   try {
+    await dbConnect();
     const { id } = await params;
     const service = await Service.findByIdAndDelete(id);
     if (!service) return NextResponse.json({ error: 'Service not found' }, { status: 404 });

@@ -3,8 +3,8 @@ import dbConnect from '@/lib/db';
 import Guest from '@/lib/models/Guest';
 
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  await dbConnect();
   try {
+    await dbConnect();
     const { id } = await params;
     const { address } = await req.json();
     const guest = await Guest.findByIdAndUpdate(id, { address }, { new: true });

@@ -3,8 +3,8 @@ import dbConnect from '@/lib/db';
 import Payment from '@/lib/models/Payment';
 
 export async function GET() {
-  await dbConnect();
   try {
+    await dbConnect();
     const revenue = await Payment.aggregate([
       {
         $group: {
